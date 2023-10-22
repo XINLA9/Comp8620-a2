@@ -1,0 +1,7 @@
+# Grid environment
+1 4
+
+# Size: 1x4
+
+# Cleaning probabilities
+0.95 0.85 0.75 0.95
