@@ -1,6 +1,8 @@
-import sys
+import re
 from itertools import product
+from typing import List
 import numpy as np
+import sys
 
 
 class MDP:
@@ -9,22 +11,36 @@ class MDP:
         self._m = len(_grids)
         self._n = len(_grids[0])
 
-        self._states = list(product(range(self._m), range(self._n), product('cd', repeat=self._m * self._n)))
-        self._goalStates = list(product(range(self._m), range(self._n), product('c', repeat=self._m * self._n)))
+        self._states = []
+        for i in range(self._m):
+            for j in range(self._n):
+                for state in product('cd', repeat=self._m * self._n):
+                    state_str = 'm' + str(i) + 'n' + str(j) + ''.join(state)
+                    self._states.append(state_str)
+        self._goalStates = []
+        for i in range(self._m):
+            for j in range(self._n):
+                for state in product('c', repeat=self._m * self._n):
+                    state_str = 'm' + str(i) + 'n' + str(j) + ''.join(state)
+                    self._goalStates.append(state_str)
 
         self._actions = ['up', 'down', 'left', 'right', 'vacuum']
         self.gamma = 0.90
         self.theta = 1e-3
         self.V = {}
         for state in self._states:
-            # if state[:2] + (tuple(state[2]),) in self._goalStates:
             if state in self._goalStates:
                 self.V[state] = 100
             else:
                 self.V[state] = 0
 
     def transition(self, state, action):
-        i, j, cleanliness = state
+        match = re.match(r'm(\d+)n(\d+)(.*)', state)
+        if not match:
+            return {state: 1.0}
+
+        i, j, cleanliness = int(match.group(1)), int(match.group(2)), match.group(3)
+
         if action == 'up':
             i = max(0, i - 1)
         elif action == 'down':
@@ -34,7 +50,7 @@ class MDP:
         elif action == 'right':
             j = min(self._n - 1, j + 1)
 
-        result_states = {(i, j, cleanliness): 1.0}
+        result_states = {'m' + str(i) + 'n' + str(j) + cleanliness: 1.0}
 
         if action == 'vacuum':
             cell_type = self._grids[i][j]
@@ -48,17 +64,25 @@ class MDP:
 
             cleanliness_list = list(cleanliness)
             cleanliness_list[i * self._n + j] = 'c'
+            cleaned_state = 'm' + str(i) + 'n' + str(j) + ''.join(cleanliness_list)
 
             result_states = {
-                (i, j, tuple(cleanliness_list)): cleaning_success_probability,
-                (i, j, cleanliness): 1 - cleaning_success_probability
+                cleaned_state: cleaning_success_probability,
+                'm' + str(i) + 'n' + str(j) + cleanliness: 1 - cleaning_success_probability
             }
 
         return result_states
 
     def reward(self, state, action, next_state):
-        i, j, cleanliness = state
-        i_next, j_next, cleanliness_next = next_state
+        match_state = re.match(r'm(\d+)n(\d+)(.*)', state)
+        match_next_state = re.match(r'm(\d+)n(\d+)(.*)', next_state)
+
+        if not match_state or not match_next_state:
+            return 0
+
+        i, j, cleanliness = int(match_state.group(1)), int(match_state.group(2)), match_state.group(3)
+        i_next, j_next, cleanliness_next = int(match_next_state.group(1)), int(
+            match_next_state.group(2)), match_next_state.group(3)
 
         if action == 'vacuum':
             if cleanliness[i * self._n + j] == 'c':
@@ -81,7 +105,7 @@ class MDP:
             delta = 0
             V_copy = self.V.copy()
             for state in self._states:
-                if state[:2] + (tuple(state[2]),) not in self._goalStates:
+                if state not in self._goalStates:
                     v = self.V[state]
                     best_action_val = float('-inf')
                     best_action = None
@@ -111,7 +135,7 @@ def read_grid_from_file(filename):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        filename = "test_case.txt"
+        filename = "test_case"
     else:
         filename = sys.argv[1]
     grids = read_grid_from_file(filename)

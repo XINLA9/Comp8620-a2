@@ -1,6 +1,7 @@
+from itertools import product
 import re
 import sys
-from itertools import product
+import numpy as np
 
 
 class MDP:
@@ -9,18 +10,8 @@ class MDP:
         self._m = len(_grids)
         self._n = len(_grids[0])
 
-        self._states = []
-        for m in range(self._m):
-            for n in range(self._n):
-                for state in product('cd', repeat=self._m * self._n):
-                    state_str = 'm' + str(m) + 'n' + str(n) + ''.join(state)
-                    self._states.append(state_str)
-        self._goalStates = []
-        for m in range(self._m):
-            for n in range(self._n):
-                for state in product('c', repeat=self._m * self._n):
-                    state_str = 'm' + str(m) + 'n' + str(n) + ''.join(state)
-                    self._goalStates.append(state_str)
+        self._states = list(product(range(self._m), range(self._n), product('cd', repeat=self._m * self._n)))
+        self._goalStates = list(product(range(self._m), range(self._n), product('c', repeat=self._m * self._n)))
 
         self._actions = ['up', 'down', 'left', 'right']
         self.gamma = 0.90
@@ -33,14 +24,8 @@ class MDP:
                 self.V[state] = 0
 
     def transition(self, state, action):
-        match = re.match(r'm(\d+)n(\d+)(.*)', state)
-        if not match:
-            return {state: 1.0}
-
-        m, n, cleanliness = int(match.group(1)), int(match.group(2)), match.group(3)
-
+        m, n, cleanliness = state
         original_m, original_n = m, n
-
         if action == 'up':
             m = max(0, m - 1)
         elif action == 'down':
@@ -65,36 +50,24 @@ class MDP:
 
         cleanliness_list = list(cleanliness)
         cleanliness_list[m * self._n + n] = 'c'
-        cleaned_state = 'm' + str(m) + 'n' + str(n) + ''.join(cleanliness_list)
 
         result_states = {
-            cleaned_state: cleaning_success_probability,
-            'm' + str(m) + 'n' + str(n) + cleanliness: 1 - cleaning_success_probability
+            (m, n, tuple(cleanliness_list)): cleaning_success_probability,
+            (m, n, cleanliness): 1 - cleaning_success_probability
         }
 
         return result_states
 
     def reward(self, state, action, next_state):
-        match_state = re.match(r'm(\d+)n(\d+)(.*)', state)
-        match_next_state = re.match(r'm(\d+)n(\d+)(.*)', next_state)
+        i, j, cleanliness = state
+        i_next, j_next, cleanliness_next = next_state
 
-        if not match_state or not match_next_state:
-            return 0
-
-        i, j, cleanliness = int(match_state.group(1)), int(match_state.group(2)), match_state.group(3)
-        i_next, j_next, cleanliness_next = int(match_next_state.group(1)), int(
-            match_next_state.group(2)), match_next_state.group(3)
-
-        # 如果机器人试图移动出边界
         if state == next_state:
             return -5
-        # 如果机器人移动到了一个脏格子并成功清洁它
         elif cleanliness_next[i_next * self._n + j_next] == 'c' and cleanliness[i * self._n + j] != 'c':
             return 5
-        # 如果机器人移动到了一个已经清洁的格子
         elif cleanliness_next[i_next * self._n + j_next] == 'c' and cleanliness[i * self._n + j] == 'c':
             return -1
-        # 如果机器人尝试清洁但失败了
         elif cleanliness_next[i_next * self._n + j_next] != 'c':
             return -3
         else:
@@ -136,7 +109,7 @@ def read_grid_from_file(filename):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        filename = "test_case.txt"
+        filename = "test_case"
     else:
         filename = sys.argv[1]
     grids = read_grid_from_file(filename)
