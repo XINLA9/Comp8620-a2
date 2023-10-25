@@ -101,6 +101,7 @@ class MDP:
 
     def value_iteration(self):
         policy = {}
+        iteration_number = 0
         while True:
             delta = 0
             V_copy = self.V.copy()
@@ -122,9 +123,10 @@ class MDP:
                     policy[state] = best_action
                     delta = max(delta, abs(v - V_copy[state]))
             self.V = V_copy
+            iteration_number += 1
             if delta < self.theta:
                 break
-        return self.V, policy
+        return self.V, policy, iteration_number
 
 
 def read_grid_from_file(filename):
@@ -133,17 +135,31 @@ def read_grid_from_file(filename):
         return [list(line.strip()) for line in lines]
 
 
+def save_solution_to_file(filename, v, policy):
+    with open(filename, 'w') as f:
+        f.write("value\n")
+        for key in v:
+            f.write(f"{key} {v[key]}\n")
+        f.write("policy\n")
+        for key in policy:
+            f.write(f"{key} {policy[key]}\n")
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        filename = "test_case"
+        input_filename = "../test/test_case_1"
     else:
-        filename = sys.argv[1]
-    grids = read_grid_from_file(filename)
+        input_filename = sys.argv[1]
+
+    # Extract the test case number and create the output filename
+    test_case_num = input_filename.split("_")[-1]  # Get the number after "test_case_"
+    output_filename = f"test/solution_{test_case_num}"
+
+    grids = read_grid_from_file(input_filename)
     for row in grids:
         print(row)
     mdp = MDP(grids)
-    v, policy = mdp.value_iteration()
-    for key in v:
-        print(key, v[key])
-    for key in policy:
-        print(key, policy[key])
+    v, policy, iteration = mdp.value_iteration()
+
+    print(len(policy))
+    save_solution_to_file(output_filename, v, policy)
