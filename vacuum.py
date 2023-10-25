@@ -5,6 +5,10 @@ import numpy as np
 
 class MDP:
     def __init__(self, _grids):
+        """
+
+        :param _grids:
+        """
         self._grids = _grids
         self._m = len(_grids)
         self._n = len(_grids[0])
@@ -60,6 +64,13 @@ class MDP:
         return result_states
 
     def reward(self, state, action, next_state):
+        """
+
+        :param state:
+        :param action:
+        :param next_state:
+        :return:
+        """
         i, j, cleanliness = state
         i_next, j_next, cleanliness_next = next_state
 
@@ -79,6 +90,10 @@ class MDP:
         return 0
 
     def value_iteration(self):
+        """
+
+        :return:
+        """
         iteration_number = 0
         policy = {}
         while True:
@@ -109,12 +124,26 @@ class MDP:
 
 
 def read_grid_from_file(filename):
+    """
+    Read grid configuration from a file.
+
+    :param filename: String, name of the file.
+    :return: List of Lists, the grid configuration.
+    """
     with open(filename, 'r') as f:
         lines = f.readlines()
         return [list(line.strip()) for line in lines]
 
 
 def save_solution_to_file(filename, v, policy):
+    """
+    Save the value function and policy to a file.
+
+    :param filename: String, name of the file.
+    :param v: Dictionary with states as keys and their values.
+    :param policy: Dictionary with states as keys and their optimal actions.
+    :return: None
+    """
     with open(filename, 'w') as f:
         f.write("value\n")
         for key in v:

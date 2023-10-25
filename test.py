@@ -5,12 +5,24 @@ from vacuum import MDP
 
 
 def read_grid_from_file(filename):
+    """
+
+    :param filename:
+    :return:
+    """
     with open(filename, 'r') as f:
         lines = f.readlines()
         return [list(line.strip()) for line in lines]
 
 
 def save_solution_to_file(filename, v, policy):
+    """
+
+    :param filename:
+    :param v:
+    :param policy:
+    :return:
+    """
     with open(filename, 'w') as f:
         for key in v:
             f.write(f"{key} {v[key]}\n")
@@ -18,7 +30,12 @@ def save_solution_to_file(filename, v, policy):
             f.write(f"{key} {policy[key]}\n")
 
 
-def run_value_iteration_for_file(filepath):
+def run_value_iteration_for_file(filepath:str):
+    """
+
+    :param filepath:
+    :return:
+    """
     grids = read_grid_from_file(filepath)
     mdp = MDP(grids)
     state_num = mdp.state_num
